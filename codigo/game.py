@@ -144,3 +144,4 @@ class ConnectK:
             linhas.append(" ".join(simbolo[self.peca(s, c, r)] for c in range(self.ncols)))
         linhas.append(" ".join(str(c) for c in range(self.ncols)))
         return "\n".join(linhas)
+
