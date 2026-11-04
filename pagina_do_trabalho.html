@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente de Ligue 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: coluna única de leitura (880px), navegação fixa no topo, tabelas e código com rolagem própria. */
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --ink: #14202e; --muted: #5a6776; --line: #d8dee6;
+  --accent: #0c3d6b; --accent-soft: #e4edf7; --good: #1b7a3e; --good-soft: #e1f3e8;
+  --warn: #8a4b00; --warn-soft: #fbefd9; --code-bg: #eef2f7;
+  --display: "Source Serif 4", Georgia, serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1520; --surface: #151f2c; --ink: #e5eaf1; --muted: #98a5b5; --line: #263445;
+    --accent: #7db8f0; --accent-soft: #1a2c42; --good: #5cc489; --good-soft: #15301f;
+    --warn: #e3a845; --warn-soft: #33270f; --code-bg: #0f1925; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1520; --surface: #151f2c; --ink: #e5eaf1; --muted: #98a5b5; --line: #263445;
+  --accent: #7db8f0; --accent-soft: #1a2c42; --good: #5cc489; --good-soft: #15301f;
+  --warn: #e3a845; --warn-soft: #33270f; --code-bg: #0f1925; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); }
+a { color: var(--accent); }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+header.top { padding: 40px 0 24px; }
+.eyebrow { font: 500 13px/1 var(--mono); color: var(--muted); letter-spacing: .02em; margin: 0 0 14px; }
+h1 { font: 700 clamp(30px, 5vw, 44px)/1.1 var(--display); margin: 0 0 12px; color: var(--accent); text-wrap: balance; }
+.lead { max-width: 65ch; color: var(--muted); margin: 0; }
+nav.sec { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+nav.sec .wrap { display: flex; gap: 4px; overflow-x: auto; padding-top: 8px; padding-bottom: 8px; }
+nav.sec a { white-space: nowrap; text-decoration: none; color: var(--muted); font-size: 14px; padding: 6px 10px; border-radius: 6px; }
+nav.sec a:hover, nav.sec a:focus-visible { background: var(--accent-soft); color: var(--accent); outline: none; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 28px 0 8px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.tile b { display: block; font: 600 28px/1.1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; }
+.tile span { font-size: 14px; color: var(--muted); }
+section { padding: 40px 0 8px; }
+h2 { font: 700 26px/1.2 var(--display); margin: 0 0 6px; text-wrap: balance; }
+h2 .id { font: 500 13px/1 var(--mono); color: var(--accent); background: var(--accent-soft); padding: 4px 8px; border-radius: 5px; vertical-align: middle; margin-left: 8px; }
+h3 { font: 600 17px/1.3 var(--body); margin: 26px 0 8px; }
+p { margin: 0 0 12px; max-width: 70ch; }
+.mut { color: var(--muted); }
+ul { padding-left: 20px; margin: 0 0 12px; max-width: 72ch; }
+li { margin-bottom: 4px; }
+code, .fn { font-family: var(--mono); font-size: .9em; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin: 12px 0 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 13px; white-space: nowrap; }
+tbody tr:last-child > * { border-bottom: 0; }
+tbody th { font-weight: 500; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.def th { width: 190px; white-space: nowrap; color: var(--accent); font-weight: 600; background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+.chips span { background: var(--good-soft); color: var(--good); font-size: 13.5px; font-weight: 500; padding: 5px 11px; border-radius: 99px; }
+.note { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; max-width: 78ch; }
+.note b { color: var(--warn); }
+.calc { font-family: var(--mono); font-size: 14px; background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto; white-space: pre; margin: 12px 0; }
+figure { margin: 12px 0 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 10px 8px; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 4px 8px 6px; }
+svg .grid { stroke: var(--line); stroke-width: 1; }
+svg .ref { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 4; }
+svg .ci { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+svg .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+svg text { fill: var(--ink); font-family: var(--body); }
+svg .lab { font-size: 13.5px; font-weight: 600; }
+svg .sub { font-size: 12.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+svg .tick { font-size: 11.5px; fill: var(--muted); }
+/* código */
+.tabs { display: flex; gap: 6px; overflow-x: auto; margin-top: 12px; }
+.tabs button { cursor: pointer; text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; min-width: 150px; }
+.tabs button .fn { font-weight: 500; }
+.tabs button .mut { font-size: 12.5px; }
+.tabs button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 -3px 0 var(--accent); }
+.codebar { display: flex; justify-content: space-between; align-items: center; background: var(--code-bg); border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; padding: 6px 12px; margin-top: 10px; font: 500 13px/1 var(--mono); color: var(--muted); }
+.copy { cursor: pointer; font: 500 13px/1 var(--body); color: var(--accent); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; }
+.copy:hover { border-color: var(--accent); }
+pre.code { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 8px 8px; padding: 14px 16px; overflow: auto; max-height: 560px; font: 400 13px/1.55 var(--mono); tab-size: 4; }
+pre.out { margin: 8px 0 0; background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow: auto; font: 400 12.5px/1.5 var(--mono); }
+details { margin: 8px 0 16px; }
+summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer { padding: 36px 0 56px; color: var(--muted); font-size: 14px; }
+@media (max-width: 560px) { table.def th { width: auto; white-space: normal; } .tabs button { min-width: 130px; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <p class="eyebrow">TDE2 · Busca Competitiva · PCO118A · PUCPR</p>
+  <h1>Agente de Ligue 4</h1>
+  <p class="lead">Minimax com poda alfa-beta para o Ligue 4 (7×6, 4 em linha), avaliado contra um agente aleatório e contra ele mesmo com profundidade menor. Custo medido em nós visitados.</p>
+  <p class="mut" style="margin-top:10px"> · entrega em 02/11</p>
+  <div class="tiles">
+    <div class="tile"><b>0</b><span>divergências entre Minimax e alfa-beta em 78 posições</span></div>
+    <div class="tile"><b>33 de 39</b><span>posições em que um alfa-beta defeituoso foi pego pelo teste</span></div>
+    <div class="tile"><b>800</b><span>partidas em 4 confrontos, com sementes fixas</span></div>
+    <div class="tile"><b>−87%</b><span>de nós do alfa-beta contra o Minimax, na profundidade 5</span></div>
+  </div>
+</div></header>
+
+<nav class="sec" aria-label="Seções"><div class="wrap">
+  <a href="#jogo">Jogo</a><a href="#busca">Busca</a><a href="#verificacao">Verificação</a><a href="#protocolo">Protocolo</a><a href="#resultados">Resultados</a><a href="#limites">Limitações</a><a href="#codigo">Código</a>
+</div></nav>
+
+<main class="wrap">
+
+<section id="jogo">
+  <h2>O jogo e a formalização <span class="id">ID2.1</span></h2>
+  <p>Dois jogadores alternam soltando uma peça numa das 7 colunas. Vence quem alinhar 4 peças na horizontal, vertical ou diagonal. Tabuleiro cheio sem alinhamento é empate.</p>
+  <div class="chips" aria-label="As cinco verificações do jogo"><span>2 jogadores</span><span>soma zero</span><span>informação perfeita</span><span>determinístico</span><span>finito (até 42 jogadas)</span></div>
+  <div class="scroll"><table class="def"><tbody>
+    <tr><th scope="row">Estado</th><td><code>s = (colunas, jogador, última)</code>. <code>colunas</code>: 7 tuplas com as peças de baixo para cima (+1 MAX, −1 MIN). <code>jogador</code>: de quem é a vez, parte do estado. <code>última</code>: posição da última peça, atalho para o teste de vitória.</td></tr>
+    <tr><th scope="row">s₀ e JOGADOR</th><td>Tabuleiro vazio, vez de MAX. <code>JOGADOR(s) = s.jogador</code>.</td></tr>
+    <tr><th scope="row">AÇÕES(s)</th><td>As colunas com menos de 6 peças, de 1 a 7 ações.</td></tr>
+    <tr><th scope="row">RESULTADO(s, a)</th><td>Põe a peça de <code>s.jogador</code> no topo da coluna <code>a</code>, passa a vez e registra a última peça. Devolve um estado novo.</td></tr>
+    <tr><th scope="row">TESTE-TERMINAL</th><td>A última peça completou 4 em linha, ou as 7 colunas estão cheias (empate). Só a última peça pode ter vencido, então só ela é testada.</td></tr>
+    <tr><th scope="row">UTILIDADE(s, MAX)</th><td>+1 se MAX alinhou 4, −1 se MIN alinhou 4, 0 no empate. Um único número, do ponto de vista de MAX.</td></tr>
+  </tbody></table></div>
+  <p class="mut">Como cada coluna é uma pilha, uma peça flutuante é impossível por construção. O número de configurações é no máximo 3<sup>42</sup> ≈ 1,1×10<sup>20</sup> (cota grosseira).</p>
+  <h3>Tamanho da árvore</h3>
+  <div class="calc">b ≤ 7   (medido: 6,75 em partidas aleatórias; 5,3 entre agentes de busca)
+m ≈ 36  (mediana das partidas entre agentes de busca: 36 a 37; máximo 42)
+
+b^m = 7^36 ≈ 2,6×10^30      (com m = 42: 7^42 ≈ 3,1×10^35)
+com os valores medidos (b ≈ 5,3 e m ≈ 33):  ≈ 8×10^23 nós</div>
+  <p>Buscar até o fim é inviável. Por isso o agente usa alfa-beta com corte por profundidade e uma função de avaliação.</p>
+</section>
+
+<section id="busca">
+  <h2>A busca <span class="id">ID2.2</span></h2>
+  <div class="scroll"><table class="def"><tbody>
+    <tr><th scope="row">Algoritmos</th><td>Minimax e alfa-beta (fail-soft), os dois com contador de nós. Uma chamada da busca conta como um nó.</td></tr>
+    <tr><th scope="row">Valor terminal</th><td>UTILIDADE × (10 000 − nº de peças jogadas). Vitória mais cedo vale mais e derrota mais tarde dói menos, então o agente não adia uma vitória certa. Fica sempre acima de qualquer avaliação heurística.</td></tr>
+    <tr><th scope="row">Ordenação de jogadas</th><td>Colunas do centro para as bordas (3, 2, 4, 1, 5, 0, 6). Custa zero, é uma lista fixa. As casas centrais entram em mais alinhamentos possíveis.</td></tr>
+    <tr><th scope="row">Avaliação</th><td>Cada janela de 4 casas alinhadas (69 no 7×6) com peças de um só lado vale ±10<sup>n−1</sup> para n peças. Janelas mistas valem 0, porque ninguém consegue completá-las. Mais ±3 por peça na coluna central. Pesos escolhidos a priori, sem calibração.</td></tr>
+    <tr><th scope="row">Parada</th><td>Profundidade fixa (2, 4 e 6 jogadas). Sem aprofundamento iterativo e sem quiescência.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section id="verificacao">
+  <h2>Verificação do alfa-beta <span class="id">ID2.2</span></h2>
+  <p>O alfa-beta precisa devolver exatamente o valor do Minimax. Sem essa igualdade não dá para distinguir um alfa-beta correto de um que poda demais. O teste tem três partes:</p>
+  <ul>
+    <li><b>Profundidade completa</b> em tabuleiros pequenos (3×3, 4×3, 4×4 com 3 em linha, 5×4 com 4 em linha), a partir da raiz e de posições sorteadas. Alfa-beta com e sem ordenação.</li>
+    <li><b>Profundidade limitada</b> no 7×6 padrão, com a avaliação: 66 posições sorteadas em profundidades de 1 a 5, sem nenhuma divergência.</li>
+    <li><b>Controle:</b> um alfa-beta defeituoso de propósito, que para depois do primeiro filho, tem de ser reprovado. Divergiu do Minimax em 33 de 39 posições.</li>
+  </ul>
+  <div class="scroll"><table>
+    <thead><tr><th>Instância</th><th>Lances sorteados</th><th>Valor Minimax</th><th>Valor alfa-beta</th><th>Nós Minimax</th><th>Nós alfa-beta</th><th>Resultado</th></tr></thead>
+    <tbody><tr><td>3x3 · k=3</td><td class=num>0</td><td class=num>0</td><td class=num>0</td><td class=num>3.278</td><td class=num>653</td><td><span class='pill ok'>igual</span></td></tr><tr><td>3x3 · k=3</td><td class=num>1</td><td class=num>0</td><td class=num>0</td><td class=num>1.087</td><td class=num>323</td><td><span class='pill ok'>igual</span></td></tr><tr><td>3x3 · k=3</td><td class=num>2</td><td class=num>9991</td><td class=num>9991</td><td class=num>425</td><td class=num>73</td><td><span class='pill ok'>igual</span></td></tr><tr><td>4x3 · k=3</td><td class=num>0</td><td class=num>9991</td><td class=num>9991</td><td class=num>277.167</td><td class=num>2.120</td><td><span class='pill ok'>igual</span></td></tr><tr><td>4x3 · k=3</td><td class=num>1</td><td class=num>9989</td><td class=num>9989</td><td class=num>72.586</td><td class=num>2.342</td><td><span class='pill ok'>igual</span></td></tr><tr><td>4x3 · k=3</td><td class=num>2</td><td class=num>9991</td><td class=num>9991</td><td class=num>15.868</td><td class=num>603</td><td><span class='pill ok'>igual</span></td></tr><tr><td>4x4 · k=3</td><td class=num>0</td><td class=num>9991</td><td class=num>9991</td><td class=num>6.761.217</td><td class=num>11.985</td><td><span class='pill ok'>igual</span></td></tr><tr><td>4x4 · k=3</td><td class=num>3</td><td class=num>9989</td><td class=num>9989</td><td class=num>88.848</td><td class=num>1.456</td><td><span class='pill ok'>igual</span></td></tr><tr><td>4x4 · k=3</td><td class=num>5</td><td class=num>-9990</td><td class=num>-9990</td><td class=num>2.307</td><td class=num>284</td><td><span class='pill ok'>igual</span></td></tr><tr><td>5x4 · k=4</td><td class=num>8</td><td class=num>0</td><td class=num>0</td><td class=num>422.266</td><td class=num>6.500</td><td><span class='pill ok'>igual</span></td></tr><tr><td>5x4 · k=4</td><td class=num>9</td><td class=num>9981</td><td class=num>9981</td><td class=num>130.682</td><td class=num>4.240</td><td><span class='pill ok'>igual</span></td></tr><tr><td>5x4 · k=4</td><td class=num>10</td><td class=num>9981</td><td class=num>9981</td><td class=num>25.305</td><td class=num>1.547</td><td><span class='pill ok'>igual</span></td></tr></tbody></table></div>
+  <p class="mut">Valores perto de ±10 000 são vitória de MAX ou de MIN; 0 é empate. Na raiz do 4×4, o Minimax visitou 6,76 milhões de nós e o alfa-beta com ordenação, cerca de 12 mil.</p>
+  <details><summary>Saída completa do verify.py</summary><pre class="out">== A) Profundidade completa, instâncias pequenas ==
+instância   posição     minimax   ab+ord       ab      nós mm  nós ab+ord    nós ab  ok
+3x3 k=3   lances=0          0        0        0        3278         653       593  OK  (0.0s)
+3x3 k=3   lances=1          0        0        0        1087         323       347  OK  (0.0s)
+3x3 k=3   lances=2       9991     9991     9991         425          73       248  OK  (0.0s)
+4x3 k=3   lances=0       9991     9991     9991      277167        2120      5095  OK  (1.4s)
+4x3 k=3   lances=1       9989     9989     9989       72586        2342      1155  OK  (0.3s)
+4x3 k=3   lances=2       9991     9991     9991       15868         603       701  OK  (0.1s)
+4x4 k=3   lances=0       9991     9991     9991     6761217       11985     33810  OK  (32.5s)
+4x4 k=3   lances=3       9989     9989     9989       88848        1456      8615  OK  (0.6s)
+4x4 k=3   lances=5      -9990    -9990    -9990        2307         284       284  OK  (0.0s)
+5x4 k=4   lances=8          0        0        0      422266        6500      6309  OK  (2.4s)
+5x4 k=4   lances=9       9981     9981     9981      130682        4240      5810  OK  (0.7s)
+5x4 k=4   lances=10      9981     9981     9981       25305        1547      5041  OK  (0.2s)
+
+== B) Profundidade limitada (com avaliação) no 7x6 ==
+profundidade 1: nós minimax=      118  nós alfa-beta(ord)=      118  economia=0%
+profundidade 2: nós minimax=      734  nós alfa-beta(ord)=      348  economia=53%
+profundidade 3: nós minimax=     5167  nós alfa-beta(ord)=     1688  economia=67%
+profundidade 4: nós minimax=    31045  nós alfa-beta(ord)=     5054  economia=84%
+profundidade 5: nós minimax=   168351  nós alfa-beta(ord)=    22371  economia=87%
+66 posições comparadas, 0 divergências
+
+== C) Controle: alfa-beta defeituoso (poda demais) deve ser pego ==
+o defeito divergiu do Minimax em 33 de 39 posições
+
+RESULTADO: TUDO OK
+</pre></details>
+</section>
+
+<section id="protocolo">
+  <h2>Protocolo experimental <span class="id">ID2.3</span></h2>
+  <ul>
+    <li><b>Unidade de custo:</b> nós visitados, por jogada e por partida. O agente aleatório não busca e custa 0 nós. Nada é medido em segundos.</li>
+    <li><b>Adversários:</b> o agente aleatório (linha de base) e o próprio agente com profundidade menor. Também AB(6) contra AB(4) e AB(2) contra o aleatório.</li>
+    <li><b>Calibração simétrica:</b> mesma avaliação, mesma ordenação e mesmo alfa-beta para todos os agentes de busca. Nenhuma varredura de parâmetros em nenhum dos lados. Só a profundidade muda.</li>
+    <li><b>Partidas:</b> 100 aberturas de 4 lances sorteados, cada uma jogada duas vezes com os lados trocados, dando 200 partidas por confronto. Como os agentes são determinísticos, sem isso toda partida seria a mesma. A mesma abertura pode sair mais de uma vez por acaso (93 distintas entre as 100).</li>
+    <li><b>Sementes:</b> base 20261029. Rodar de novo reproduz os mesmos números.</li>
+    <li><b>Relato:</b> V/E/D, placar (V + E/2)/N com intervalo de 95% por bootstrap sobre as aberturas, resultado por quem joga primeiro e distribuição do custo. Nada de "melhor de N".</li>
+  </ul>
+</section>
+
+<section id="resultados">
+  <h2>Resultados <span class="id">ID2.3</span></h2>
+  <figure>
+    <svg viewBox="0 0 700 250" role="img" aria-label="Placar de A em cada confronto, com intervalo de confiança de 95%"><line class="grid" x1="250.0" x2="250.0" y1="14" y2="206"/><text class="tick" x="250.0" y="228" text-anchor="middle">0,4</text><line class="ref" x1="315.0" x2="315.0" y1="14" y2="206"/><text class="tick" x="315.0" y="228" text-anchor="middle">0,5</text><line class="grid" x1="380.0" x2="380.0" y1="14" y2="206"/><text class="tick" x="380.0" y="228" text-anchor="middle">0,6</text><line class="grid" x1="445.0" x2="445.0" y1="14" y2="206"/><text class="tick" x="445.0" y="228" text-anchor="middle">0,7</text><line class="grid" x1="510.0" x2="510.0" y1="14" y2="206"/><text class="tick" x="510.0" y="228" text-anchor="middle">0,8</text><line class="grid" x1="575.0" x2="575.0" y1="14" y2="206"/><text class="tick" x="575.0" y="228" text-anchor="middle">0,9</text><line class="grid" x1="640.0" x2="640.0" y1="14" y2="206"/><text class="tick" x="640.0" y="228" text-anchor="middle">1,0</text><text class="tick" x="315.0" y="244" text-anchor="middle">empate técnico</text><text class="lab" x="0" y="37">AB(prof=2) contra Aleatório</text><text class="sub" x="0" y="54">0,995  ·  IC95% [0,985; 1,000]</text><line class="ci" x1="630.2" x2="640.0" y1="40" y2="40"/><circle class="dot" cx="636.8" cy="40" r="5.5"/><text class="lab" x="0" y="83">AB(prof=4) contra Aleatório</text><text class="sub" x="0" y="100">0,995  ·  IC95% [0,985; 1,000]</text><line class="ci" x1="630.2" x2="640.0" y1="86" y2="86"/><circle class="dot" cx="636.8" cy="86" r="5.5"/><text class="lab" x="0" y="129">AB(prof=4) contra AB(prof=2)</text><text class="sub" x="0" y="146">0,560  ·  IC95% [0,495; 0,623]</text><line class="ci" x1="311.8" x2="394.9" y1="132" y2="132"/><circle class="dot" cx="354.0" cy="132" r="5.5"/><text class="lab" x="0" y="175">AB(prof=6) contra AB(prof=4)</text><text class="sub" x="0" y="192">0,588  ·  IC95% [0,530; 0,645]</text><line class="ci" x1="334.5" x2="409.2" y1="178" y2="178"/><circle class="dot" cx="372.2" cy="178" r="5.5"/></svg>
+    <figcaption>Placar do agente A em 200 partidas por confronto. A barra é o intervalo de 95%. A linha tracejada marca 0,5: um intervalo que a inclui não permite afirmar que A é melhor.</figcaption>
+  </figure>
+  <div class="scroll"><table>
+    <thead><tr><th>Confronto</th><th>V / E / D de A</th><th>Placar de A</th><th>A como MAX (joga 1º depois da abertura)</th><th>A como MIN</th></tr></thead>
+    <tbody><tr><th scope=row>AB(prof=2) <span class=mut>contra</span> Aleatório</th><td class=num>199 / 0 / 1</td><td class=num>0,995</td><td class=num>100 / 0 / 0</td><td class=num>99 / 0 / 1</td></tr><tr><th scope=row>AB(prof=4) <span class=mut>contra</span> Aleatório</th><td class=num>199 / 0 / 1</td><td class=num>0,995</td><td class=num>100 / 0 / 0</td><td class=num>99 / 0 / 1</td></tr><tr><th scope=row>AB(prof=4) <span class=mut>contra</span> AB(prof=2)</th><td class=num>105 / 14 / 81</td><td class=num>0,560</td><td class=num>60 / 8 / 32</td><td class=num>45 / 6 / 49</td></tr><tr><th scope=row>AB(prof=6) <span class=mut>contra</span> AB(prof=4)</th><td class=num>108 / 19 / 73</td><td class=num>0,588</td><td class=num>65 / 8 / 27</td><td class=num>43 / 11 / 46</td></tr></tbody></table></div>
+  <h3>Custo em nós visitados</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Agente A</th><th>Nós por jogada (média)</th><th>mediana</th><th>p95</th><th>máximo</th><th>Nós por partida (média)</th></tr></thead>
+    <tbody><tr><th scope=row>AB(prof=2) <span class=mut>contra</span> Aleatório</th><td class=num>53</td><td class=num>56</td><td class=num>56</td><td class=num>56</td><td class=num>280</td></tr><tr><th scope=row>AB(prof=4) <span class=mut>contra</span> Aleatório</th><td class=num>918</td><td class=num>921</td><td class=num>1.382</td><td class=num>2.189</td><td class=num>4.528</td></tr><tr><th scope=row>AB(prof=4) <span class=mut>contra</span> AB(prof=2)</th><td class=num>595</td><td class=num>626</td><td class=num>1.295</td><td class=num>2.170</td><td class=num>8.647</td></tr><tr><th scope=row>AB(prof=6) <span class=mut>contra</span> AB(prof=4)</th><td class=num>7.196</td><td class=num>5.533</td><td class=num>20.105</td><td class=num>69.452</td><td class=num>106.040</td></tr></tbody></table></div>
+  <h3>O que os números mostram</h3>
+  <ul>
+    <li>AB(2) e AB(4) vencem o aleatório em 199 de 200 partidas cada, mesmo a profundidade 2.</li>
+    <li>AB(4) contra AB(2): o intervalo inclui 0,5, então com esta amostra não dá para afirmar que a profundidade 4 é melhor que a 2.</li>
+    <li>AB(6) contra AB(4): a vantagem existe (o intervalo fica acima de 0,5), mas é pequena e custa cerca de 12 vezes mais nós por jogada. Numa única jogada chegou a 69 452 nós.</li>
+    <li>O agente mais fundo vence bem quando joga primeiro depois da abertura e fica perto do empate quando joga em segundo.</li>
+    <li>A ordenação de jogadas reduz os nós em 49% na profundidade 5 (de 181.267 para 91.809 em 60 posições), com valores idênticos.</li>
+  </ul>
+</section>
+
+<section id="limites">
+  <h2>O que o sistema não garante</h2>
+  <div class="note"><b>Limitações declaradas.</b> A avaliação é uma só e não foi calibrada. Não há aprofundamento iterativo nem quiescência, então uma ameaça logo além da profundidade fixa passa despercebida. Não há tabela de transposição. O agente não joga perfeitamente. Os resultados valem para aberturas de 4 lances sorteados. Houve uma derrota contra o aleatório em cada confronto; não verifiquei se as aberturas sorteadas já eram perdidas.</div>
+</section>
+
+<section id="codigo">
+  <h2>Código</h2>
+  <p>Só biblioteca padrão do Python 3. Cada arquivo abaixo pode ser copiado. O pacote completo, com README, resultados e partidas, foi enviado junto na conversa.</p>
+  <div class="scroll" style="padding:0"><table class="def"><tbody>
+    <tr><th scope="row">Verificar</th><td><code>python3 verify.py</code> — cerca de 40 s. Deve terminar com <code>RESULTADO: TUDO OK</code>.</td></tr>
+    <tr><th scope="row">Experimento</th><td><code>python3 experiment.py</code> — cerca de 10 min em 2 núcleos. <code>python3 experiment.py 10</code> faz uma versão curta.</td></tr>
+  </tbody></table></div>
+  <div class="tabs" role="tablist" aria-label="Arquivos de código"><button type="button" role="tab" id="tab-0" aria-controls="p-0" aria-selected="true" data-i="0"><span class=fn>game.py</span><span class=mut>Regras, estado e avaliação</span></button><button type="button" role="tab" id="tab-1" aria-controls="p-1" aria-selected="false" data-i="1"><span class=fn>search.py</span><span class=mut>Minimax e alfa-beta</span></button><button type="button" role="tab" id="tab-2" aria-controls="p-2" aria-selected="false" data-i="2"><span class=fn>verify.py</span><span class=mut>Teste de igualdade</span></button><button type="button" role="tab" id="tab-3" aria-controls="p-3" aria-selected="false" data-i="3"><span class=fn>experiment.py</span><span class=mut>Protocolo experimental</span></button></div>
+  <div role="tabpanel" id="p-0" aria-labelledby="tab-0" ><div class="codebar"><span>game.py · 146 linhas</span><button type="button" class="copy" data-copy="c-0">Copiar</button></div><pre class="code" tabindex="0"><code id="c-0"># game.py - as regras do Ligue 4: tabuleiro, jogadas, fim de jogo e nota das posições.
+from collections import namedtuple
+
+MAX = +1  # jogador que quer o maior valor (suas peças valem +1)
+MIN = -1  # jogador que quer o menor valor (suas peças valem -1)
+
+# Um ESTADO do jogo guarda 3 coisas:
+#   cols   : as 7 colunas. Cada coluna é uma tupla com as peças de baixo para cima (+1 ou -1)
+#   player : de quem é a vez (MAX ou MIN)
+#   last   : (coluna, linha) da última peça jogada. Só serve para testar a vitória mais rápido
+State = namedtuple(&quot;State&quot;, [&quot;cols&quot;, &quot;player&quot;, &quot;last&quot;])
+
+# As 4 direções em que dá para alinhar peças: horizontal, vertical e as duas diagonais
+DIRECOES = ((1, 0), (0, 1), (1, 1), (1, -1))
+
+
+class ConnectK:
+    &quot;&quot;&quot;Ligue 4 com tamanho configurável. Padrão: 7 colunas, 6 linhas, 4 em linha.&quot;&quot;&quot;
+
+    def __init__(self, ncols=7, nrows=6, k=4):
+        self.ncols, self.nrows, self.k = ncols, nrows, k
+        # colunas do centro para as bordas: 3, 2, 4, 1, 5, 0, 6 (usada para ordenar as jogadas)
+        meio = (ncols - 1) / 2
+        self.ordem_das_colunas = sorted(range(ncols), key=lambda c: (abs(c - meio), c))
+        # todos os grupos de k casas seguidas do tabuleiro (usados na nota das posições)
+        self.janelas = self._todas_as_janelas()
+
+    def _todas_as_janelas(self):
+        janelas = []
+        for c in range(self.ncols):
+            for r in range(self.nrows):
+                for dc, dr in DIRECOES:
+                    c_fim, r_fim = c + (self.k - 1) * dc, r + (self.k - 1) * dr
+                    if 0 &lt;= c_fim &lt; self.ncols and 0 &lt;= r_fim &lt; self.nrows:  # cabe no tabuleiro?
+                        janelas.append([(c + i * dc, r + i * dr) for i in range(self.k)])
+        return janelas
+
+    # ------------------------------------------------------------------
+    # Os componentes da formalização do jogo
+    # ------------------------------------------------------------------
+    def initial(self):
+        &quot;&quot;&quot;Estado inicial: tabuleiro vazio, vez de MAX.&quot;&quot;&quot;
+        return State(cols=tuple(() for _ in range(self.ncols)), player=MAX, last=None)
+
+    def player(self, s):
+        &quot;&quot;&quot;De quem é a vez.&quot;&quot;&quot;
+        return s.player
+
+    def actions(self, s):
+        &quot;&quot;&quot;Jogadas possíveis: as colunas que ainda não estão cheias.&quot;&quot;&quot;
+        return [c for c in range(self.ncols) if len(s.cols[c]) &lt; self.nrows]
+
+    def result(self, s, a):
+        &quot;&quot;&quot;Novo estado depois de jogar na coluna a. O estado s original não é alterado.&quot;&quot;&quot;
+        coluna = s.cols[a]
+        assert len(coluna) &lt; self.nrows, &quot;coluna cheia&quot;
+        novas_colunas = list(s.cols)
+        novas_colunas[a] = coluna + (s.player,)  # a peça cai no topo da coluna
+        return State(tuple(novas_colunas), -s.player, (a, len(coluna)))  # a vez passa ao outro
+
+    def terminal(self, s):
+        &quot;&quot;&quot;O jogo acabou? Sim se alguém alinhou 4 ou se o tabuleiro está cheio (empate).&quot;&quot;&quot;
+        return self.winner(s) != 0 or self.is_full(s)
+
+    def utility(self, s):
+        &quot;&quot;&quot;Valor de um estado final, sempre do ponto de vista de MAX: +1, -1 ou 0 (empate).&quot;&quot;&quot;
+        return self.winner(s)
+
+    # ------------------------------------------------------------------
+    # Fim de jogo
+    # ------------------------------------------------------------------
+    def winner(self, s):
+        &quot;&quot;&quot;Quem alinhou 4 peças (+1 = MAX, -1 = MIN) ou 0 se ninguém.
+        Só a última peça jogada pode ter completado o alinhamento, então só olhamos ao redor dela.&quot;&quot;&quot;
+        if s.last is None:
+            return 0
+        c, r = s.last
+        cor = s.cols[c][r]
+        for dc, dr in DIRECOES:
+            # a própria peça + as iguais seguidas num sentido + as iguais seguidas no sentido oposto
+            total = 1 + self._contar(s, c, r, dc, dr, cor) + self._contar(s, c, r, -dc, -dr, cor)
+            if total &gt;= self.k:
+                return cor
+        return 0
+
+    def _contar(self, s, c, r, dc, dr, cor):
+        &quot;&quot;&quot;Quantas peças da cor dada há em sequência, a partir de (c, r), andando na direção (dc, dr).&quot;&quot;&quot;
+        n = 0
+        c, r = c + dc, r + dr
+        while self.peca(s, c, r) == cor:
+            n += 1
+            c, r = c + dc, r + dr
+        return n
+
+    def peca(self, s, c, r):
+        &quot;&quot;&quot;A peça na casa (coluna c, linha r): +1, -1, ou 0 se está vazia ou fora do tabuleiro.&quot;&quot;&quot;
+        if 0 &lt;= c &lt; self.ncols and 0 &lt;= r &lt; len(s.cols[c]):
+            return s.cols[c][r]
+        return 0
+
+    def is_full(self, s):
+        return all(len(coluna) == self.nrows for coluna in s.cols)
+
+    def plies(self, s):
+        &quot;&quot;&quot;Quantas peças já foram jogadas.&quot;&quot;&quot;
+        return sum(len(coluna) for coluna in s.cols)
+
+    # ------------------------------------------------------------------
+    # Ajudas para a busca
+    # ------------------------------------------------------------------
+    def ordered_actions(self, s):
+        &quot;&quot;&quot;As jogadas possíveis em ordem: colunas do centro primeiro (costumam ser as melhores).&quot;&quot;&quot;
+        return [c for c in self.ordem_das_colunas if len(s.cols[c]) &lt; self.nrows]
+
+    def evaluate(self, s):
+        &quot;&quot;&quot;Nota de uma posição que ainda não acabou, do ponto de vista de MAX
+        (positiva é boa para MAX, negativa é boa para MIN).
+
+        Olha cada janela de 4 casas. Se ela só tem peças de um jogador, ainda pode virar um
+        alinhamento dele: vale 1, 10 ou 100 pontos para 1, 2 ou 3 peças. Janela com peças dos
+        dois lados vale 0. Cada peça na coluna do meio vale mais 3 pontos.&quot;&quot;&quot;
+        nota = 0
+        for janela in self.janelas:
+            do_max = do_min = 0  # quantas peças de cada jogador há nesta janela
+            for c, r in janela:
+                coluna = s.cols[c]
+                if r &lt; len(coluna):  # a casa tem peça?
+                    if coluna[r] == MAX:
+                        do_max += 1
+                    else:
+                        do_min += 1
+            if do_max and not do_min:
+                nota += 10 ** (do_max - 1)
+            elif do_min and not do_max:
+                nota -= 10 ** (do_min - 1)
+        nota += 3 * sum(s.cols[self.ncols // 2])  # bônus da coluna do meio
+        return nota
+
+    def render(self, s):
+        &quot;&quot;&quot;Desenha o tabuleiro em texto (X = MAX, O = MIN).&quot;&quot;&quot;
+        simbolo = {MAX: &quot;X&quot;, MIN: &quot;O&quot;, 0: &quot;.&quot;}
+        linhas = []
+        for r in range(self.nrows - 1, -1, -1):  # de cima para baixo
+            linhas.append(&quot; &quot;.join(simbolo[self.peca(s, c, r)] for c in range(self.ncols)))
+        linhas.append(&quot; &quot;.join(str(c) for c in range(self.ncols)))
+        return &quot;\n&quot;.join(linhas)
+</code></pre></div><div role="tabpanel" id="p-1" aria-labelledby="tab-1" hidden><div class="codebar"><span>search.py · 88 linhas</span><button type="button" class="copy" data-copy="c-1">Copiar</button></div><pre class="code" tabindex="0"><code id="c-1"># search.py - a busca do agente: Minimax, alfa-beta e a escolha da melhor jogada.
+# Todo valor é do ponto de vista de MAX: valor alto é bom para MAX, valor baixo é bom para MIN.
+import math
+
+from game import MAX
+
+INF = math.inf
+WIN = 10_000  # valor de uma vitória. A nota de evaluate() fica sempre bem abaixo disso
+
+
+class Stats:
+    &quot;&quot;&quot;Conta os nós visitados. Cada chamada da busca é um nó. Essa é a unidade de custo.&quot;&quot;&quot;
+
+    def __init__(self):
+        self.nodes = 0
+
+
+def valor_se_folha(game, s, depth):
+    &quot;&quot;&quot;Se a busca deve parar neste estado, devolve o valor dele. Senão devolve None.&quot;&quot;&quot;
+    if game.terminal(s):
+        # Vitória mais cedo vale mais (e derrota mais tarde dói menos),
+        # para o agente não adiar uma vitória que já é certa.
+        return game.utility(s) * (WIN - game.plies(s))
+    if depth &lt;= 0:
+        return game.evaluate(s)  # acabou a profundidade: usa a nota da posição
+    return None
+
+
+def acoes(game, s, ordered):
+    &quot;&quot;&quot;As jogadas possíveis, com ou sem a ordenação do centro para as bordas.&quot;&quot;&quot;
+    return game.ordered_actions(s) if ordered else game.actions(s)
+
+
+def minimax(game, s, depth=INF, stats=None, ordered=False):
+    &quot;&quot;&quot;Valor do estado s, olhando todas as jogadas até a profundidade dada.
+    MAX escolhe a jogada de maior valor e MIN a de menor valor.&quot;&quot;&quot;
+    if stats is None:
+        stats = Stats()
+    stats.nodes += 1
+    valor = valor_se_folha(game, s, depth)
+    if valor is not None:
+        return valor
+
+    valores = [minimax(game, game.result(s, a), depth - 1, stats, ordered)
+               for a in acoes(game, s, ordered)]
+    return max(valores) if game.player(s) == MAX else min(valores)
+
+
+def alphabeta(game, s, depth=INF, alpha=-INF, beta=INF, stats=None, ordered=True):
+    &quot;&quot;&quot;Dá o MESMO valor do Minimax, mas visita menos nós porque poda ramos inúteis.
+    alpha = melhor valor que MAX já tem garantido. beta = melhor valor (o menor) que MIN já tem.&quot;&quot;&quot;
+    if stats is None:
+        stats = Stats()
+    stats.nodes += 1
+    valor = valor_se_folha(game, s, depth)
+    if valor is not None:
+        return valor
+
+    if game.player(s) == MAX:
+        melhor = -INF
+        for a in acoes(game, s, ordered):
+            melhor = max(melhor, alphabeta(game, game.result(s, a), depth - 1, alpha, beta, stats, ordered))
+            if melhor &gt;= beta:  # MIN já tem uma opção melhor em outro ramo e não deixaria chegar aqui
+                return melhor   # PODA: não olha as outras jogadas
+            alpha = max(alpha, melhor)
+        return melhor
+
+    melhor = INF
+    for a in acoes(game, s, ordered):
+        melhor = min(melhor, alphabeta(game, game.result(s, a), depth - 1, alpha, beta, stats, ordered))
+        if melhor &lt;= alpha:  # MAX já tem uma opção melhor em outro ramo e não deixaria chegar aqui
+            return melhor    # PODA
+        beta = min(beta, melhor)
+    return melhor
+
+
+def best_move(game, s, depth, ordered=True, stats=None):
+    &quot;&quot;&quot;Escolhe a melhor coluna para quem joga em s. Devolve (coluna, valor).
+    Cada jogada é avaliada sem cortes na raiz, para o valor de cada uma ser exato.&quot;&quot;&quot;
+    if stats is None:
+        stats = Stats()
+    sinal = game.player(s)  # +1 se joga MAX, -1 se joga MIN: assim &quot;maior&quot; é sempre &quot;melhor&quot;
+    melhor_jogada, melhor_valor = None, -INF
+    for a in acoes(game, s, ordered):
+        valor = sinal * alphabeta(game, game.result(s, a), depth - 1, stats=stats, ordered=ordered)
+        if valor &gt; melhor_valor:  # em empate fica a primeira, que é a mais central
+            melhor_jogada, melhor_valor = a, valor
+    return melhor_jogada, sinal * melhor_valor
+</code></pre></div><div role="tabpanel" id="p-2" aria-labelledby="tab-2" hidden><div class="codebar"><span>verify.py · 123 linhas</span><button type="button" class="copy" data-copy="c-2">Copiar</button></div><pre class="code" tabindex="0"><code id="c-2"># verify.py - prova que o alfa-beta dá EXATAMENTE o mesmo valor que o Minimax.
+# Rodar: python3 verify.py     (deve terminar com &quot;RESULTADO: TUDO OK&quot;)
+#   A) tabuleiros pequenos, olhando o jogo inteiro (sem cortar a profundidade)
+#   B) tabuleiro 7x6 normal, com profundidade limitada
+#   C) controle: um alfa-beta errado de propósito TEM que ser reprovado
+import random
+import sys
+import time
+
+from game import MAX, ConnectK
+from search import INF, Stats, alphabeta, minimax, valor_se_folha
+
+SEMENTE = 2026  # sorteio fixo: rodar de novo dá os mesmos números
+
+
+def posicao_aleatoria(game, rng, jogadas):
+    &quot;&quot;&quot;Joga alguns lances ao acaso a partir do início e devolve a posição (para se o jogo acabar).&quot;&quot;&quot;
+    s = game.initial()
+    for _ in range(jogadas):
+        if game.terminal(s):
+            break
+        s = game.result(s, rng.choice(game.actions(s)))
+    return s
+
+
+def comparar(game, s, depth=INF):
+    &quot;&quot;&quot;Roda os 3 algoritmos na mesma posição: Minimax, alfa-beta com ordenação e alfa-beta sem.
+    Devolve os 3 valores e os 3 custos (nós visitados).&quot;&quot;&quot;
+    nos_mm, nos_ab_ord, nos_ab = Stats(), Stats(), Stats()
+    v_mm = minimax(game, s, depth, nos_mm)
+    v_ab_ord = alphabeta(game, s, depth, stats=nos_ab_ord, ordered=True)
+    v_ab = alphabeta(game, s, depth, stats=nos_ab, ordered=False)
+    return v_mm, v_ab_ord, v_ab, nos_mm.nodes, nos_ab_ord.nodes, nos_ab.nodes
+
+
+def bloco_a():
+    print(&quot;== A) Profundidade completa, instâncias pequenas ==&quot;)
+    print(f&quot;{&#x27;instância&#x27;:&lt;12}{&#x27;posição&#x27;:&lt;10}{&#x27;minimax&#x27;:&gt;9}{&#x27;ab+ord&#x27;:&gt;9}{&#x27;ab&#x27;:&gt;9}&quot;
+          f&quot;{&#x27;nós mm&#x27;:&gt;12}{&#x27;nós ab+ord&#x27;:&gt;12}{&#x27;nós ab&#x27;:&gt;10}  ok&quot;)
+    rng = random.Random(SEMENTE)
+    falhas = 0
+    # (colunas, linhas, quantas em linha, quantos lances sortear antes de testar)
+    casos = [(3, 3, 3, [0, 1, 2]), (4, 3, 3, [0, 1, 2]), (4, 4, 3, [0, 3, 5]), (5, 4, 4, [8, 9, 10])]
+    for ncols, nrows, k, lances in casos:
+        game = ConnectK(ncols, nrows, k)
+        for n in lances:
+            s = posicao_aleatoria(game, rng, n)
+            if game.terminal(s):
+                continue
+            inicio = time.time()
+            v_mm, v_ab_ord, v_ab, nos_mm, nos_ab_ord, nos_ab = comparar(game, s)
+            ok = v_mm == v_ab_ord == v_ab  # &lt;- a igualdade que a ficha exige
+            falhas += not ok
+            print(f&quot;{ncols}x{nrows} k={k:&lt;4}{&#x27;lances=&#x27; + str(n):&lt;10}{v_mm:&gt;9}{v_ab_ord:&gt;9}{v_ab:&gt;9}&quot;
+                  f&quot;{nos_mm:&gt;12}{nos_ab_ord:&gt;12}{nos_ab:&gt;10}  {&#x27;OK&#x27; if ok else &#x27;FALHOU&#x27;}  ({time.time() - inicio:.1f}s)&quot;)
+    return falhas
+
+
+def bloco_b():
+    print(&quot;\n== B) Profundidade limitada (com avaliação) no 7x6 ==&quot;)
+    game = ConnectK(7, 6, 4)
+    rng = random.Random(SEMENTE + 1)
+    falhas = total = 0
+    for depth in (1, 2, 3, 4, 5):
+        nos_mm = nos_ab = 0
+        for _ in range(15):
+            s = posicao_aleatoria(game, rng, rng.randint(0, 20))
+            if game.terminal(s):
+                continue
+            v_mm, v_ab_ord, v_ab, a, b, _ = comparar(game, s, depth)
+            total += 1
+            falhas += not (v_mm == v_ab_ord == v_ab)
+            nos_mm, nos_ab = nos_mm + a, nos_ab + b
+        print(f&quot;profundidade {depth}: nós minimax={nos_mm:&gt;9}  nós alfa-beta(ord)={nos_ab:&gt;9}  &quot;
+              f&quot;economia={100 * (1 - nos_ab / nos_mm):.0f}%&quot;)
+    print(f&quot;{total} posições comparadas, {falhas} divergências&quot;)
+    return falhas
+
+
+def alfabeta_defeituoso(game, s, depth, alpha=-INF, beta=INF):
+    &quot;&quot;&quot;Alfa-beta ERRADO de propósito: depois de testar a primeira jogada ele para (poda demais).
+    Serve só para provar que o teste de igualdade percebe quando a poda está errada.&quot;&quot;&quot;
+    valor = valor_se_folha(game, s, depth)
+    if valor is not None:
+        return valor
+    maximizando = game.player(s) == MAX
+    melhor = -INF if maximizando else INF
+    for a in game.ordered_actions(s):
+        v = alfabeta_defeituoso(game, game.result(s, a), depth - 1, alpha, beta)
+        if maximizando:
+            melhor = max(melhor, v)
+            if melhor &gt;= beta:
+                return melhor
+            alpha = max(alpha, melhor)
+        else:
+            melhor = min(melhor, v)
+            if melhor &lt;= alpha:
+                return melhor
+            beta = min(beta, melhor)
+        if depth &gt;= 2:  # &lt;- o defeito
+            return melhor
+    return melhor
+
+
+def bloco_c():
+    print(&quot;\n== C) Controle: alfa-beta defeituoso (poda demais) deve ser pego ==&quot;)
+    game = ConnectK(4, 4, 3)
+    rng = random.Random(SEMENTE + 2)
+    pegas = total = 0
+    for _ in range(40):
+        s = posicao_aleatoria(game, rng, rng.randint(0, 6))
+        if game.terminal(s):
+            continue
+        total += 1
+        pegas += minimax(game, s, 4) != alfabeta_defeituoso(game, s, 4)  # o defeito deu valor diferente?
+    print(f&quot;o defeito divergiu do Minimax em {pegas} de {total} posições&quot;)
+    return 0 if pegas &gt; 0 else 1
+
+
+if __name__ == &quot;__main__&quot;:
+    problemas = bloco_a() + bloco_b() + bloco_c()
+    print(&quot;\nRESULTADO:&quot;, &quot;TUDO OK&quot; if problemas == 0 else f&quot;{problemas} PROBLEMA(S)&quot;)
+    sys.exit(1 if problemas else 0)
+</code></pre></div><div role="tabpanel" id="p-3" aria-labelledby="tab-3" hidden><div class="codebar"><span>experiment.py · 184 linhas</span><button type="button" class="copy" data-copy="c-3">Copiar</button></div><pre class="code" tabindex="0"><code id="c-3"># experiment.py - o campeonato: faz os agentes jogarem entre si e mede resultado e custo.
+# Rodar: python3 experiment.py [N_ABERTURAS]   (padrão 100 aberturas = 200 partidas por confronto)
+#
+# Como o experimento é justo:
+#   - custo medido em NÓS VISITADOS por jogada (o aleatório não busca, custa 0)
+#   - os agentes de busca têm a mesma avaliação, a mesma ordenação e o mesmo alfa-beta; só a
+#     profundidade muda, e nada foi calibrado
+#   - cada abertura (4 lances sorteados) é jogada duas vezes, trocando quem começa
+#   - sorteios com semente fixa: rodar de novo dá os mesmos números
+import csv
+import math
+import os
+import random
+import statistics
+import sys
+import time
+from collections import namedtuple
+from multiprocessing import Pool
+
+from game import MAX, MIN, ConnectK
+from search import Stats, alphabeta, best_move
+
+NCOLS, NROWS, K = 7, 6, 4   # tabuleiro 7x6, 4 em linha
+ABERTURA_PLIES = 4          # lances sorteados no começo de cada partida
+SEMENTE_BASE = 20261029
+
+# Cada agente é a profundidade do alfa-beta (um número) ou &quot;aleatorio&quot;.
+# Cada confronto é (agente A, agente B). O A é o agente &quot;de interesse&quot;.
+CONFRONTOS = [
+    (2, &quot;aleatorio&quot;),   # linha de base: o agente mais fraco já vence o aleatório?
+    (4, &quot;aleatorio&quot;),
+    (4, 2),             # o próprio agente com profundidade menor (obrigatório)
+    (6, 4),             # o que ganha ao aprofundar mais
+]
+
+# O que guardamos de cada partida (o resultado é sempre do ponto de vista do agente A)
+Partida = namedtuple(&quot;Partida&quot;, [&quot;confronto&quot;, &quot;abertura&quot;, &quot;a_e_max&quot;, &quot;resultado_a&quot;, &quot;jogadas&quot;, &quot;nos_a&quot;, &quot;nos_b&quot;])
+
+
+def nome(agente):
+    return &quot;Aleatório&quot; if agente == &quot;aleatorio&quot; else f&quot;AB(prof={agente})&quot;
+
+
+def escolher(game, s, agente, rng):
+    &quot;&quot;&quot;O agente escolhe uma jogada. Devolve (coluna, nós visitados).&quot;&quot;&quot;
+    if agente == &quot;aleatorio&quot;:
+        return rng.choice(game.actions(s)), 0
+    nos = Stats()
+    coluna, _ = best_move(game, s, agente, ordered=True, stats=nos)
+    return coluna, nos.nodes
+
+
+def abertura(game, i):
+    &quot;&quot;&quot;A abertura de número i: 4 lances sorteados. O mesmo i dá sempre a mesma abertura.&quot;&quot;&quot;
+    rng = random.Random(SEMENTE_BASE + i)
+    s = game.initial()
+    for _ in range(ABERTURA_PLIES):
+        s = game.result(s, rng.choice(game.actions(s)))
+    return s
+
+
+def jogar(tarefa):
+    &quot;&quot;&quot;Joga uma partida inteira. O agente A joga como MAX se a_e_max for 1, senão como MIN.&quot;&quot;&quot;
+    confronto, i, a_e_max = tarefa
+    game = ConnectK(NCOLS, NROWS, K)
+    agente_a, agente_b = CONFRONTOS[confronto]
+    cor_a = MAX if a_e_max else MIN
+    rng = random.Random(SEMENTE_BASE + 10**6 + confronto * 10**4 + i * 2 + a_e_max)
+
+    s = abertura(game, i)
+    nos_a, nos_b = [], []
+    while not game.terminal(s):
+        if game.player(s) == cor_a:            # é a vez do A
+            coluna, nos = escolher(game, s, agente_a, rng)
+            nos_a.append(nos)
+        else:                                   # é a vez do B
+            coluna, nos = escolher(game, s, agente_b, rng)
+            nos_b.append(nos)
+        s = game.result(s, coluna)
+
+    resultado_a = game.winner(s) * cor_a        # +1 o A ganhou, -1 o A perdeu, 0 empate
+    return Partida(confronto, i, a_e_max, resultado_a, game.plies(s), nos_a, nos_b)
+
+
+def intervalo_de_confianca(placares, repeticoes=4000):
+    &quot;&quot;&quot;Intervalo de 95% do placar médio (bootstrap): sorteia os placares com reposição
+    muitas vezes e pega a faixa que contém 95% das médias.&quot;&quot;&quot;
+    rng = random.Random(SEMENTE_BASE)
+    n = len(placares)
+    medias = sorted(sum(rng.choice(placares) for _ in range(n)) / n for _ in range(repeticoes))
+    return medias[int(0.025 * repeticoes)], medias[int(0.975 * repeticoes) - 1]
+
+
+def descrever(valores):
+    &quot;&quot;&quot;Resume uma lista de custos: média, mediana, p95 e máximo.&quot;&quot;&quot;
+    if not valores:
+        return &quot;-&quot;
+    valores = sorted(valores)
+    p95 = valores[min(len(valores) - 1, math.ceil(0.95 * len(valores)) - 1)]
+    return (f&quot;média={statistics.mean(valores):.0f} mediana={statistics.median(valores):.0f} &quot;
+            f&quot;p95={p95} máx={valores[-1]}&quot;)
+
+
+def resumo(confronto, partidas, texto):
+    &quot;&quot;&quot;Escreve no texto o resultado de um confronto.&quot;&quot;&quot;
+    agente_a, agente_b = CONFRONTOS[confronto]
+    jogos = [p for p in partidas if p.confronto == confronto]
+    n = len(jogos)
+    vitorias = sum(p.resultado_a == 1 for p in jogos)
+    empates = sum(p.resultado_a == 0 for p in jogos)
+    derrotas = sum(p.resultado_a == -1 for p in jogos)
+
+    # placar de cada abertura = média das duas partidas dela (vitória 1, empate 0,5, derrota 0)
+    por_abertura = {}
+    for p in jogos:
+        por_abertura.setdefault(p.abertura, []).append((p.resultado_a + 1) / 2)
+    placares = [sum(v) / len(v) for v in por_abertura.values()]
+    baixo, alto = intervalo_de_confianca(placares)
+
+    texto.append(f&quot;\n### {nome(agente_a)} (A) contra {nome(agente_b)} (B) - {n} partidas, {len(por_abertura)} aberturas pareadas&quot;)
+    texto.append(f&quot;- A: {vitorias}V {empates}E {derrotas}D | placar (V+E/2)/N = {(vitorias + empates / 2) / n:.3f}  &quot;
+                 f&quot;IC95% [{baixo:.3f}, {alto:.3f}]&quot;)
+    for rotulo, a_e_max in ((&quot;A jogando como MAX (joga primeiro após a abertura)&quot;, 1), (&quot;A jogando como MIN&quot;, 0)):
+        lado = [p for p in jogos if p.a_e_max == a_e_max]
+        texto.append(f&quot;- {rotulo}: {sum(p.resultado_a == 1 for p in lado)}V &quot;
+                     f&quot;{sum(p.resultado_a == 0 for p in lado)}E {sum(p.resultado_a == -1 for p in lado)}D&quot;)
+    texto.append(f&quot;- nós por jogada de A: {descrever([nos for p in jogos for nos in p.nos_a])}&quot;)
+    texto.append(f&quot;- nós por jogada de B: {descrever([nos for p in jogos for nos in p.nos_b])}&quot;)
+    texto.append(f&quot;- nós por PARTIDA de A: {descrever([sum(p.nos_a) for p in jogos])}&quot;)
+    texto.append(f&quot;- duração (jogadas totais): {descrever([p.jogadas for p in jogos])}&quot;)
+
+
+def efeito_da_ordenacao(texto, n_posicoes=60):
+    &quot;&quot;&quot;Mede quanto a ordenação (centro primeiro) economiza de nós, com o mesmo valor (profundidade 5).&quot;&quot;&quot;
+    game = ConnectK(NCOLS, NROWS, K)
+    rng = random.Random(SEMENTE_BASE + 7)
+    nos_com = nos_sem = achadas = 0
+    while achadas &lt; n_posicoes:
+        s = game.initial()
+        for _ in range(rng.randint(4, 20)):
+            if game.terminal(s):
+                break
+            s = game.result(s, rng.choice(game.actions(s)))
+        if game.terminal(s):
+            continue
+        achadas += 1
+        com, sem = Stats(), Stats()
+        valor_com = alphabeta(game, s, 5, stats=com, ordered=True)
+        valor_sem = alphabeta(game, s, 5, stats=sem, ordered=False)
+        assert valor_com == valor_sem  # a ordenação muda o custo, nunca o valor
+        nos_com += com.nodes
+        nos_sem += sem.nodes
+    texto.append(f&quot;\n### Ablação da ordenação de jogadas (alfa-beta, prof=5, {n_posicoes} posições sorteadas)&quot;)
+    texto.append(f&quot;- nós SEM ordenação: {nos_sem}  | COM ordenação (centro primeiro): {nos_com}  &quot;
+                 f&quot;| redução: {100 * (1 - nos_com / nos_sem):.0f}%  (valores idênticos nas {n_posicoes} posições)&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    n_aberturas = int(sys.argv[1]) if len(sys.argv) &gt; 1 else 100
+    # uma tarefa por partida: (confronto, abertura, A joga como MAX?). Cada abertura é jogada dos dois lados.
+    tarefas = [(c, i, lado) for c in range(len(CONFRONTOS)) for i in range(n_aberturas) for lado in (1, 0)]
+
+    inicio = time.time()
+    with Pool(os.cpu_count()) as pool:  # reparte as partidas entre os núcleos do computador
+        partidas = pool.map(jogar, tarefas, chunksize=2)
+
+    texto = [f&quot;# Resultados - Ligue 4 {NCOLS}x{NROWS}, {K} em linha&quot;,
+             f&quot;{n_aberturas} aberturas x 2 lados = {2 * n_aberturas} partidas por confronto; &quot;
+             f&quot;abertura = {ABERTURA_PLIES} lances sorteados; semente base {SEMENTE_BASE}; &quot;
+             f&quot;tempo total {time.time() - inicio:.0f}s&quot;]
+    for c in range(len(CONFRONTOS)):
+        resumo(c, partidas, texto)
+    efeito_da_ordenacao(texto)
+    texto = &quot;\n&quot;.join(texto)
+    print(texto)
+
+    open(&quot;resultados.md&quot;, &quot;w&quot;, encoding=&quot;utf8&quot;).write(texto + &quot;\n&quot;)
+    with open(&quot;partidas.csv&quot;, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf8&quot;) as arquivo:
+        escritor = csv.writer(arquivo)
+        escritor.writerow([&quot;confronto&quot;, &quot;A&quot;, &quot;B&quot;, &quot;abertura&quot;, &quot;A_e_MAX&quot;, &quot;resultado_A&quot;, &quot;jogadas&quot;, &quot;nos_A&quot;, &quot;nos_B&quot;])
+        for p in partidas:
+            agente_a, agente_b = CONFRONTOS[p.confronto]
+            escritor.writerow([p.confronto, nome(agente_a), nome(agente_b), p.abertura, p.a_e_max,
+                               p.resultado_a, p.jogadas, sum(p.nos_a), sum(p.nos_b)])
+</code></pre></div>
+</section>
+
+</main>
+<footer><div class="wrap">TDE2 · Inteligência Artificial (PCO118A) · Prof. Carlos Costa Cedro · PUCPR</div></footer>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(i) {
+    tabs.forEach(function (t, k) {
+      var on = k === i;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      var p = document.getElementById(t.getAttribute('aria-controls'));
+      if (on) { p.removeAttribute('hidden'); } else { p.setAttribute('hidden', ''); }
+    });
+  }
+  tabs.forEach(function (t, k) {
+    t.tabIndex = k === 0 ? 0 : -1;
+    t.addEventListener('click', function () { show(k); });
+    t.addEventListener('keydown', function (e) {
+      var n = e.key === 'ArrowRight' ? k + 1 : e.key === 'ArrowLeft' ? k - 1 : null;
+      if (n === null) return;
+      n = (n + tabs.length) % tabs.length; show(n); tabs[n].focus(); e.preventDefault();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.copy'), function (b) {
+    b.addEventListener('click', function () {
+      var el = document.getElementById(b.getAttribute('data-copy'));
+      var txt = el.textContent;
+      function ok() { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1600); }
+      function fallback() {
+        var r = document.createRange(); r.selectNodeContents(el);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        b.textContent = 'Selecionado: use Ctrl+C'; setTimeout(function () { b.textContent = 'Copiar'; }, 2500);
+      }
+      try { navigator.clipboard.writeText(txt).then(ok, fallback); } catch (e) { fallback(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

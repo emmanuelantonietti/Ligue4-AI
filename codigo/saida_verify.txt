@@ -1,0 +1,27 @@
+== A) Profundidade completa, instâncias pequenas ==
+instância   posição     minimax   ab+ord       ab      nós mm  nós ab+ord    nós ab  ok
+3x3 k=3   lances=0          0        0        0        3278         653       593  OK  (0.0s)
+3x3 k=3   lances=1          0        0        0        1087         323       347  OK  (0.0s)
+3x3 k=3   lances=2       9991     9991     9991         425          73       248  OK  (0.0s)
+4x3 k=3   lances=0       9991     9991     9991      277167        2120      5095  OK  (1.4s)
+4x3 k=3   lances=1       9989     9989     9989       72586        2342      1155  OK  (0.3s)
+4x3 k=3   lances=2       9991     9991     9991       15868         603       701  OK  (0.1s)
+4x4 k=3   lances=0       9991     9991     9991     6761217       11985     33810  OK  (32.5s)
+4x4 k=3   lances=3       9989     9989     9989       88848        1456      8615  OK  (0.6s)
+4x4 k=3   lances=5      -9990    -9990    -9990        2307         284       284  OK  (0.0s)
+5x4 k=4   lances=8          0        0        0      422266        6500      6309  OK  (2.4s)
+5x4 k=4   lances=9       9981     9981     9981      130682        4240      5810  OK  (0.7s)
+5x4 k=4   lances=10      9981     9981     9981       25305        1547      5041  OK  (0.2s)
+
+== B) Profundidade limitada (com avaliação) no 7x6 ==
+profundidade 1: nós minimax=      118  nós alfa-beta(ord)=      118  economia=0%
+profundidade 2: nós minimax=      734  nós alfa-beta(ord)=      348  economia=53%
+profundidade 3: nós minimax=     5167  nós alfa-beta(ord)=     1688  economia=67%
+profundidade 4: nós minimax=    31045  nós alfa-beta(ord)=     5054  economia=84%
+profundidade 5: nós minimax=   168351  nós alfa-beta(ord)=    22371  economia=87%
+66 posições comparadas, 0 divergências
+
+== C) Controle: alfa-beta defeituoso (poda demais) deve ser pego ==
+o defeito divergiu do Minimax em 33 de 39 posições
+
+RESULTADO: TUDO OK
